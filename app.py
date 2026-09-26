@@ -15,9 +15,11 @@ def init_firebase():
             cred = credentials.Certificate('firebase-key.json')
         # Nếu chạy trên Streamlit Cloud, dùng Secrets (Sẽ cấu hình sau)
         # Nếu chạy trên Streamlit Cloud, dùng Secrets
+        # Nếu chạy trên Streamlit Cloud, dùng Secrets
         else:
             import json
             key_dict = json.loads(st.secrets["text_json"])
+            key_dict["private_key"] = key_dict["private_key"].replace("\\n", "\n")
             cred = credentials.Certificate(key_dict)
         firebase_admin.initialize_app(cred)
     return firestore.client()
