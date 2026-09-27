@@ -162,20 +162,20 @@ with tab_learn:
             st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
 
         # Nút điều hướng (Chỉ giữ lại 1 bộ có chức năng vô hiệu hóa khi ở đầu/cuối)
-        c_prev, c_next = st.columns(2)
-        with c_prev:
-            st.button("⬅️ Quay lại", on_click=prev_card, disabled=(st.session_state.current_index == 0), use_container_width=True)
-        with c_next:
-            st.button("Tiếp theo ➡️", on_click=next_card, disabled=(st.session_state.current_index == len(st.session_state.cards) - 1), use_container_width=True)
+    c_prev, c_next = st.columns(2)
+    with c_prev:
+        st.button("⬅️ Quay lại", on_click=prev_card, disabled=(st.session_state.current_index == 0), use_container_width=True)
+    with c_next:
+        st.button("Tiếp theo ➡️", on_click=next_card, disabled=(st.session_state.current_index == len(st.session_state.cards) - 1), use_container_width=True)
 
-        st.divider()
-        if st.session_state.flipped:
-            st.write("**Bạn có nhớ đáp án này không?**")
-            cf, cr = st.columns(2)
-            with cf:
-                st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
-            with cr:
-                st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
+    st.divider()
+    if st.session_state.flipped:
+        st.write("**Bạn có nhớ đáp án này không?**")
+        cf, cr = st.columns(2)
+        with cf:
+            st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
+        with cr:
+            st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
 # --- TAB QUẢN LÝ ---
 with tab_manage:
     st.subheader("Thêm thẻ mới")
