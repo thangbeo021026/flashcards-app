@@ -133,7 +133,7 @@ with col1:
 with col2:
     st.button("Đăng xuất", on_click=logout)
 
-tab_learn, tab_manage = st.tabs(["Lật Thẻ Học", "Quản Lý Thẻ"])
+tab_learn, tab_quiz, tab_manage = st.tabs(["Lật Thẻ Học", "Trắc Nghiệm", "Quản Lý Thẻ"])
 
 # --- TAB HỌC TẬP ---
 with tab_learn:
@@ -176,6 +176,81 @@ with tab_learn:
                 st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
             with cr:
                 st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
+# --- TAB TRẮC NGHIỆM ---
+with tab_quiz:
+    st.header("📝 Bài Kiểm Tra Trắc Nghiệm")
+    import random
+    
+    # Kiểm tra xem có đủ thẻ để tạo 4 đáp án (1 đúng + tối thiểu 3 sai) không
+    if not st.session_state.cards or len(st.session_state.cards) < 4:
+        st.warning("Bạn cần tạo ít nhất 4 thẻ trong 'Quản Lý Thẻ' để có đủ dữ liệu trộn 4 đáp án nhé!")
+    else:
+        # Nút tạo đề thi mới
+        if st.button("🔄 Tạo đề trắc nghiệm mới", type="primary"):
+            all_cards = st.session_state.cards
+            quiz_data = []
+            
+            for card in all_cards:
+                question = card.get('front', '')
+                correct_answer = card.get('back', '')
+                
+                # Lấy tất cả đáp án khác với đáp án đúng và dùng set() để loại bỏ các đáp án trùng lặp
+                wrong_answers = list(set([c.get('back', '') for c in all_cards if c.get('back', '') != correct_answer]))
+                
+                # Chọn ngẫu nhiên 3 đáp án sai (nếu không đủ 3 thì lấy tất cả số đáp án sai đang có)
+                if len(wrong_answers) >= 3:
+                    selected_wrongs = random.sample(wrong_answers, 3)
+                else:
+                    selected_wrongs = wrong_answers
+                
+                # Gộp 1 đáp án đúng và 3 đáp án sai, sau đó xáo trộn vị trí ngẫu nhiên
+                options = [correct_answer] + selected_wrongs
+                random.shuffle(options)
+                
+                quiz_data.append({
+                    'question': question,
+                    'options': options,
+                    'answer': correct_answer
+                })
+            
+            # Lưu đề thi vào bộ nhớ tạm để không bị reset khi chọn đáp án
+            st.session_state.quiz_data = quiz_data
+            st.session_state.quiz_submitted = False
+
+        # Hiển thị form bài thi
+        if 'quiz_data' in st.session_state and st.session_state.quiz_data:
+            st.write("---")
+            with st.form("quiz_form"):
+                user_answers = {}
+                for i, q in enumerate(st.session_state.quiz_data):
+                    st.markdown(f"**Câu {i+1}: {q['question']}**")
+                    # Hiển thị 4 lựa chọn
+                    user_answers[i] = st.radio("Chọn đáp án:", q['options'], key=f"q_{i}", label_visibility="collapsed")
+                    st.write("")
+                
+                submit_quiz = st.form_submit_button("Nộp bài")
+                
+                if submit_quiz:
+                    st.session_state.quiz_submitted = True
+                    
+            # Chấm điểm và báo kết quả sau khi ấn Nộp bài
+            if st.session_state.get('quiz_submitted'):
+                score = 0
+                total = len(st.session_state.quiz_data)
+                
+                for i, q in enumerate(st.session_state.quiz_data):
+                    if user_answers[i] == q['answer']:
+                        score += 1
+                        
+                st.success(f"🎉 **Bạn đã đúng {score} / {total} câu!**")
+                
+                # Hiện khung xem lại đáp án chi tiết
+                with st.expander("📂 Xem chi tiết đáp án"):
+                    for i, q in enumerate(st.session_state.quiz_data):
+                        if user_answers[i] == q['answer']:
+                            st.write(f"✅ **Câu {i+1}:** {q['question']} ➔ {user_answers[i]}")
+                        else:
+                            st.write(f"❌ **Câu {i+1}:** {q['question']} ➔ Bạn chọn: *{user_answers[i]}* | **Đúng là: {q['answer']}**")                
 # --- TAB QUẢN LÝ ---
 with tab_manage:
     st.subheader("Thêm thẻ mới")
