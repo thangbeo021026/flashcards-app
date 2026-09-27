@@ -3,6 +3,21 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import random
+# Đoạn code ẩn các nút dễ gây lộ mã nguồn nhưng giữ lại nút 3 chấm
+hide_streamlit_style = """
+<style>
+/* Chỉ ẩn cụm biểu tượng GitHub, Share, Bút chì (Edit) */
+[data-testid="stToolbarActions"] {
+    display: none !important;
+}
+
+/* Ẩn thêm nút Manage App của nền tảng Streamlit Cloud nếu có */
+#manage-app-button {
+    display: none !important;
+}
+</style>
+"""
+st.markdown(hide_streamlit_style, unsafe_allow_html=True)
 
 # ==========================================
 # 1. KẾT NỐI FIREBASE ĐÁM MÂY
