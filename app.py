@@ -161,10 +161,7 @@ with st.sidebar:
         st.session_state.flipped = False
 
 # Hiển thị tên kho đang học ra màn hình chính
-st.write(f"### Đang mở: **{st.session_state.current_deck}**")
-
-# 4. Lọc dữ liệu: Ép biến cards chỉ chứa các thẻ thuộc kho đang chọn
-st.session_state.cards = [c for c in st.session_state.all_cards if c.get('deck_name', 'Kho Tổng Hợp') == st.session_state.current_deck]    
+st.write(f"### Đang mở: **{st.session_state.current_deck}**")  
 
 # --- ACTIONS LẬT THẺ & ĐIỂM SỐ ---
 def flip_card(): st.session_state.flipped = not st.session_state.flipped
