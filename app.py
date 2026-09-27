@@ -183,25 +183,27 @@ with tab_manage:
             if not st.session_state.cards:
                 st.info("Hiện chưa có thẻ nào được lưu.")
             else:
-                for card in st.session_state.cards:
+                for i, card in enumerate(st.session_state.cards):
                     col1, col2, col3 = st.columns([4, 4, 2])
                     
                     with col1:
-                        # Điền đúng tên key lưu mặt trước của bạn (ví dụ: 'front', 'mat_truoc', 'cau_hoi')
-                        st.write(f"Trước: {card['front']}")
+                        # Dùng .get() để lấy dữ liệu an toàn, không báo lỗi nếu thiếu
+                        st.write(f"**Trước:** {card.get('front', '')}") 
                     with col2:
-                        # Điền đúng tên key lưu mặt sau của bạn
-                        st.write(f"Sau: {card['back']}")
+                        st.write(f"**Sau:** {card.get('back', '')}")
                     with col3:
-                        if st.button("❌ Xóa thẻ", key=f"del_all_{card['id']}"):
-                            # Sửa lại đường dẫn này cho khớp với cấu trúc Firestore của bạn
-                            # Ví dụ: Xóa trong collection 'flashcards' của user hiện tại
-                            db.collection('flashcards').document(card['id']).delete()
-                            
-                            st.success("Đã xóa thẻ!")
-                            import time
-                            time.sleep(1)
-                            st.rerun()
+                        # Lấy ID an toàn. Nếu thẻ không có ID, dùng số thứ tự i để web không sập
+                        card_id = card.get('id', f"loi_id_{i}")
+                        
+                        if st.button("❌ Xóa thẻ", key=f"del_all_{card_id}"):
+                            if "loi_id" in card_id:
+                                st.error("Thẻ này đang thiếu ID, chưa thể xóa. Cần kiểm tra lại hàm tải thẻ!")
+                            else:
+                                db.collection('flashcards').document(card_id).delete()
+                                st.success("Đã xóa thẻ!")
+                                import time
+                                time.sleep(1)
+                                st.rerun()
     with st.form("add_form", clear_on_submit=True):
         new_front = st.text_area("Mặt trước (Câu hỏi / Toán học $$...$$)")
         new_back = st.text_area("Mặt sau (Đáp án / Công thức)")
