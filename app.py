@@ -194,7 +194,7 @@ with tab_manage:
                         st.write(f"**Sau:** {card.get('back', '')}")
                     with col3:
                         # Lấy ID an toàn. Nếu thẻ không có ID, dùng số thứ tự i để web không sập
-                        card_id = card.get('id', f"loi_id_{i}")
+                        card_id = card.get('doc_id', f"loi_id_{i}")
                         
                         if st.button("❌ Xóa thẻ", key=f"del_all_{card_id}"):
                             if "loi_id" in card_id:
