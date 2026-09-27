@@ -150,14 +150,13 @@ with tab_learn:
             st.button("🔀 Trộn thẻ", on_click=shuffle_cards, use_container_width=True)
 
         # Khung hiển thị thẻ
-        with st.container(border=True):
-            if not st.session_state.flipped:
-                st.subheader("Mặt trước")
-                st.markdown(current_card['front'])
-            else:
-                st.subheader("Mặt sau")
-                st.markdown(current_card['back'])
-        
+with st.container(border=True):
+    if not st.session_state.flipped:
+        st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt trước</p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['front']}</div>", unsafe_allow_html=True)
+    else:
+        st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt sau</p>", unsafe_allow_html=True)
+        st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['back']}</div>", unsafe_allow_html=True)
         st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
 
         # Nút điều hướng
@@ -179,6 +178,30 @@ with tab_learn:
 # --- TAB QUẢN LÝ ---
 with tab_manage:
     st.subheader("Thêm thẻ mới")
+    # Tạo một thanh bấm xổ xuống để xem toàn bộ thẻ
+    with st.expander("📂 Xem toàn bộ thẻ đã lưu (Tùy chọn Xóa)"):
+            if not st.session_state.cards:
+                st.info("Hiện chưa có thẻ nào được lưu.")
+            else:
+                for card in st.session_state.cards:
+                    col1, col2, col3 = st.columns([4, 4, 2])
+                    
+                    with col1:
+                        # Điền đúng tên key lưu mặt trước của bạn (ví dụ: 'front', 'mat_truoc', 'cau_hoi')
+                        st.write(f"Trước: {card['front']}")
+                    with col2:
+                        # Điền đúng tên key lưu mặt sau của bạn
+                        st.write(f"Sau: {card['back']}")
+                    with col3:
+                        if st.button("❌ Xóa thẻ", key=f"del_all_{card['id']}"):
+                            # Sửa lại đường dẫn này cho khớp với cấu trúc Firestore của bạn
+                            # Ví dụ: Xóa trong collection 'flashcards' của user hiện tại
+                            db.collection('flashcards').document(card['id']).delete()
+                            
+                            st.success("Đã xóa thẻ!")
+                            import time
+                            time.sleep(1)
+                            st.rerun()
     with st.form("add_form", clear_on_submit=True):
         new_front = st.text_area("Mặt trước (Câu hỏi / Toán học $$...$$)")
         new_back = st.text_area("Mặt sau (Đáp án / Công thức)")
