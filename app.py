@@ -3,6 +3,45 @@ import firebase_admin
 from firebase_admin import credentials, firestore
 import os
 import random
+import streamlit.components.v1 as components
+
+def add_keyboard_shortcuts():
+    components.html(
+        """
+        <script>
+        const doc = window.parent.document;
+        // Kiểm tra để đảm bảo chỉ chèn script 1 lần
+        if (!doc.getElementById('flashcard_shortcuts')) {
+            let script = doc.createElement('script');
+            script.id = 'flashcard_shortcuts';
+            script.innerHTML = `
+                document.addEventListener('keydown', function(e) {
+                    // Bỏ qua phím tắt nếu người dùng đang nhập chữ vào ô thêm/sửa thẻ
+                    if (['INPUT', 'TEXTAREA'].includes(e.target.tagName)) return;
+                    
+                    let buttons = Array.from(document.querySelectorAll('button'));
+                    
+                    if (e.code === 'Space') {
+                        e.preventDefault(); // Chặn hành động cuộn trang mặc định của dấu cách
+                        let btn = buttons.find(b => b.innerText.includes('Lật thẻ'));
+                        if (btn) btn.click();
+                    } else if (e.code === 'ArrowRight') {
+                        let btn = buttons.find(b => b.innerText.includes('Tiếp theo'));
+                        if (btn) btn.click();
+                    } else if (e.code === 'ArrowLeft') {
+                        let btn = buttons.find(b => b.innerText.includes('Quay lại'));
+                        if (btn) btn.click();
+                    }
+                });
+            `;
+            doc.head.appendChild(script);
+        }
+        </script>
+        """,
+        height=0,
+        width=0,
+    )
+
 # Đoạn code ẩn các nút dễ gây lộ mã nguồn nhưng giữ lại nút 3 chấm
 hide_streamlit_style = """
 <style>
@@ -212,6 +251,7 @@ tab_learn, tab_quiz, tab_manage = st.tabs(["Lật Thẻ Học", "Trắc Nghiệm
 
 # --- TAB HỌC TẬP ---
 with tab_learn:
+    add_keyboard_shortcuts()
     if not st.session_state.cards:
         st.info("Chưa có thẻ nào trong kho của bạn. Hãy sang tab 'Quản Lý Thẻ' để tạo nhé!")
     else:
