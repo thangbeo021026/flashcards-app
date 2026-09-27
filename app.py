@@ -103,6 +103,35 @@ if 'data_loaded' not in st.session_state or not st.session_state.data_loaded:
     st.session_state.current_index = 0
     st.session_state.flipped = False
     st.session_state.data_loaded = True
+# ==========================================
+# QUẢN LÝ KHO THẺ & SIDEBAR
+# ==========================================
+# 1. Lưu lại một bản sao toàn bộ thẻ gốc để không bị mất dữ liệu khi lọc
+if 'all_cards' not in st.session_state:
+    st.session_state.all_cards = st.session_state.cards
+
+# 2. Quét toàn bộ thẻ để tìm các tên kho hiện có
+unique_decks = list(set([card.get('deck_name', 'Kho Tổng Hợp') for card in st.session_state.all_cards]))
+
+# 3. Vẽ thanh menu bên trái (Sidebar)
+with st.sidebar:
+    st.header("📂 Quản lý Kho Thẻ")
+    
+    # Form tạo kho mới
+    new_deck_name = st.text_input("Tạo kho mới (Nhập tên và ấn Enter):")
+    if new_deck_name and new_deck_name not in unique_decks:
+        unique_decks.append(new_deck_name)
+        st.success(f"Đã tạo: {new_deck_name}")
+    
+    # Nút chọn kho
+    selected_deck = st.selectbox("Chọn kho đang học:", unique_decks)
+    st.session_state.current_deck = selected_deck
+
+# Hiển thị tên kho đang học ra màn hình chính
+st.write(f"### Đang mở: **{st.session_state.current_deck}**")
+
+# 4. Lọc dữ liệu: Ép biến cards chỉ chứa các thẻ thuộc kho đang chọn
+st.session_state.cards = [c for c in st.session_state.all_cards if c.get('deck_name', 'Kho Tổng Hợp') == st.session_state.current_deck]    
 
 # --- ACTIONS LẬT THẺ & ĐIỂM SỐ ---
 def flip_card(): st.session_state.flipped = not st.session_state.flipped
@@ -131,6 +160,7 @@ def delete_current_card():
         doc_id = st.session_state.cards[st.session_state.current_index]["doc_id"]
         db.collection("flashcards").document(doc_id).delete() # Xóa trên Firebase
         
+        st.session_state.all_cards = [c for c in st.session_state.all_cards if c.get('doc_id') != doc_id]
         st.session_state.cards.pop(st.session_state.current_index) # Xóa trên RAM
         if st.session_state.current_index >= len(st.session_state.cards):
             st.session_state.current_index = max(0, len(st.session_state.cards) - 1)
@@ -313,6 +343,7 @@ with tab_manage:
                                 db.collection('flashcards').document(card_id).delete()
                                 
                                 # 2. CẬP NHẬT NGAY LẬP TỨC TRÊN GIAO DIỆN WEB
+                                st.session_state.all_cards = [c for c in st.session_state.all_cards if c.get('doc_id') != card_id]
                                 st.session_state.cards = [c for c in st.session_state.cards if c.get('doc_id') != card_id]
                                 
                                 # 3. Đặt lại vị trí đang học (tránh lỗi out of index)
@@ -331,13 +362,15 @@ with tab_manage:
                 new_card_data = {
                     "front": new_front, "back": new_back,
                     "owner": st.session_state.username,
-                    "remember": 0, "forget": 0
+                    "remember": 0, "forget": 0,
+                    'deck_name': st.session_state.current_deck  # BỔ SUNG DÒNG NÀY VÀO CUỐI
                 }
                 # Thêm vào Firebase
                 doc_ref = db.collection("flashcards").add(new_card_data)
                 
                 # Cập nhật RAM để hiển thị ngay
                 new_card_data["doc_id"] = doc_ref[1].id
+                st.session_state.all_cards.append(new_card_data)
                 st.session_state.cards.append(new_card_data)
                 st.success("Đã thêm thẻ thành công!")
                 st.rerun()
@@ -358,6 +391,12 @@ with tab_manage:
                 # Cập nhật RAM
                 st.session_state.cards[st.session_state.current_index]['front'] = edit_f
                 st.session_state.cards[st.session_state.current_index]['back'] = edit_b
+                # Cập nhật song song vào all_cards để đồng bộ khi chuyển kho
+                for c in st.session_state.all_cards:
+                    if c.get('doc_id') == current_card['doc_id']:
+                        c['front'] = edit_f
+                        c['back'] = edit_b
+                        break  # Tìm thấy thẻ thì dừng vòng lặp cho nhẹ máy
                 st.success("Đã cập nhật!")
         with c_del:
             if st.button("Xóa thẻ này", type="primary", on_click=delete_current_card, use_container_width=True):
