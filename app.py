@@ -146,7 +146,19 @@ with st.sidebar:
     
     # Nút chọn kho
     selected_deck = st.selectbox("Chọn kho đang học:", unique_decks)
-    st.session_state.current_deck = selected_deck
+    # ==========================================
+        # ĐIỂM MẤU CHỐT SỬA LỖI TRỘN THẺ:
+        # Chỉ bốc lại thẻ từ kho tổng khi người dùng thực sự chọn sang một kho khác
+        # ==========================================
+    if st.session_state.get('current_deck') != selected_deck:
+        st.session_state.current_deck = selected_deck
+        
+        # Dòng lọc thẻ giờ đã bị nhốt trong lệnh if
+        st.session_state.cards = [c for c in st.session_state.all_cards if c.get('deck_name', 'Kho Tổng Hợp') == selected_deck]
+        
+        # Trả về thẻ đầu tiên và úp thẻ lại mỗi khi đổi kho
+        st.session_state.current_index = 0
+        st.session_state.flipped = False
 
 # Hiển thị tên kho đang học ra màn hình chính
 st.write(f"### Đang mở: **{st.session_state.current_deck}**")
