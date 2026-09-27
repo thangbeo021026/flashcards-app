@@ -150,16 +150,18 @@ with tab_learn:
             st.button("🔀 Trộn thẻ", on_click=shuffle_cards, use_container_width=True)
 
         # Khung hiển thị thẻ
-with st.container(border=True):
-    if not st.session_state.flipped:
-        st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt trước</p>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['front']}</div>", unsafe_allow_html=True)
-    else:
-        st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt sau</p>", unsafe_allow_html=True)
-        st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['back']}</div>", unsafe_allow_html=True)
-        st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
+    with st.container(border=True):
+            if not st.session_state.flipped:
+                st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt trước</p>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['front']}</div>", unsafe_allow_html=True)
+            else:
+                st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt sau</p>", unsafe_allow_html=True)
+                st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['back']}</div>", unsafe_allow_html=True)
+            
+            # Nút Lật thẻ
+            st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
 
-        # Nút điều hướng
+        # Nút điều hướng (Chỉ giữ lại 1 bộ có chức năng vô hiệu hóa khi ở đầu/cuối)
         c_prev, c_next = st.columns(2)
         with c_prev:
             st.button("⬅️ Quay lại", on_click=prev_card, disabled=(st.session_state.current_index == 0), use_container_width=True)
@@ -174,7 +176,6 @@ with st.container(border=True):
                 st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
             with cr:
                 st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
-
 # --- TAB QUẢN LÝ ---
 with tab_manage:
     st.subheader("Thêm thẻ mới")
