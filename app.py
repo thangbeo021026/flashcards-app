@@ -180,13 +180,16 @@ with tab_learn:
 with tab_quiz:
     st.header("📝 Bài Kiểm Tra Trắc Nghiệm")
     import random
+    import time  # Thêm thư viện time để tạo ID duy nhất cho đề thi
     
-    # Kiểm tra xem có đủ thẻ để tạo 4 đáp án (1 đúng + tối thiểu 3 sai) không
     if not st.session_state.cards or len(st.session_state.cards) < 4:
         st.warning("Bạn cần tạo ít nhất 4 thẻ trong 'Quản Lý Thẻ' để có đủ dữ liệu trộn 4 đáp án nhé!")
     else:
         # Nút tạo đề thi mới
         if st.button("🔄 Tạo đề trắc nghiệm mới", type="primary"):
+            # Sinh ra một ID duy nhất mỗi lần tạo đề để xóa bộ nhớ lựa chọn cũ
+            st.session_state.quiz_id = int(time.time())
+            
             all_cards = st.session_state.cards
             quiz_data = []
             
@@ -194,16 +197,13 @@ with tab_quiz:
                 question = card.get('front', '')
                 correct_answer = card.get('back', '')
                 
-                # Lấy tất cả đáp án khác với đáp án đúng và dùng set() để loại bỏ các đáp án trùng lặp
                 wrong_answers = list(set([c.get('back', '') for c in all_cards if c.get('back', '') != correct_answer]))
                 
-                # Chọn ngẫu nhiên 3 đáp án sai (nếu không đủ 3 thì lấy tất cả số đáp án sai đang có)
                 if len(wrong_answers) >= 3:
                     selected_wrongs = random.sample(wrong_answers, 3)
                 else:
                     selected_wrongs = wrong_answers
                 
-                # Gộp 1 đáp án đúng và 3 đáp án sai, sau đó xáo trộn vị trí ngẫu nhiên
                 options = [correct_answer] + selected_wrongs
                 random.shuffle(options)
                 
@@ -213,19 +213,30 @@ with tab_quiz:
                     'answer': correct_answer
                 })
             
-            # Lưu đề thi vào bộ nhớ tạm để không bị reset khi chọn đáp án
             st.session_state.quiz_data = quiz_data
             st.session_state.quiz_submitted = False
 
         # Hiển thị form bài thi
         if 'quiz_data' in st.session_state and st.session_state.quiz_data:
             st.write("---")
+            # Lấy mã ID của đề thi hiện tại (hoặc mặc định là 0 nếu chưa có)
+            quiz_id = st.session_state.get('quiz_id', 0)
+            
             with st.form("quiz_form"):
                 user_answers = {}
                 for i, q in enumerate(st.session_state.quiz_data):
                     st.markdown(f"**Câu {i+1}: {q['question']}**")
-                    # Hiển thị 4 lựa chọn
-                    user_answers[i] = st.radio("Chọn đáp án:", q['options'], key=f"q_{i}", label_visibility="collapsed")
+                    
+                    # QUAN TRỌNG: 
+                    # 1. index=None giúp bỏ trống hoàn toàn các nút tích ban đầu
+                    # 2. key=f"q_{quiz_id}_{i}" giúp làm mới bộ nhớ mỗi khi tạo đề mới
+                    user_answers[i] = st.radio(
+                        "Chọn đáp án:", 
+                        q['options'], 
+                        index=None, 
+                        key=f"q_{quiz_id}_{i}", 
+                        label_visibility="collapsed"
+                    )
                     st.write("")
                 
                 submit_quiz = st.form_submit_button("Nộp bài")
@@ -237,21 +248,30 @@ with tab_quiz:
             if st.session_state.get('quiz_submitted'):
                 score = 0
                 total = len(st.session_state.quiz_data)
+                unanswered = 0
                 
                 for i, q in enumerate(st.session_state.quiz_data):
                     if user_answers[i] == q['answer']:
                         score += 1
+                    elif user_answers[i] is None:
+                        unanswered += 1
                         
                 st.success(f"🎉 **Bạn đã đúng {score} / {total} câu!**")
                 
-                # Hiện khung xem lại đáp án chi tiết
+                # Cảnh báo nếu học sinh nộp bài mà quên chưa chọn đáp án
+                if unanswered > 0:
+                    st.warning(f"⚠️ Bạn đã bỏ trống {unanswered} câu chưa chọn đáp án.")
+                
                 with st.expander("📂 Xem chi tiết đáp án"):
                     for i, q in enumerate(st.session_state.quiz_data):
-                        if user_answers[i] == q['answer']:
-                            st.write(f"✅ **Câu {i+1}:** {q['question']} ➔ {user_answers[i]}")
+                        # Ghi nhận trạng thái bỏ trống nếu không chọn
+                        ans = user_answers[i] if user_answers[i] is not None else "Không chọn"
+                        
+                        if ans == q['answer']:
+                            st.write(f"✅ **Câu {i+1}:** {q['question']} ➔ {ans}")
                         else:
-                            st.write(f"❌ **Câu {i+1}:** {q['question']} ➔ Bạn chọn: *{user_answers[i]}* | **Đúng là: {q['answer']}**")                
-# --- TAB QUẢN LÝ ---
+                            st.write(f"❌ **Câu {i+1}:** {q['question']} ➔ Bạn chọn: *{ans}* | **Đúng là: {q['answer']}**")                
+#Tap Quản Lý
 with tab_manage:
     st.subheader("Thêm thẻ mới")
     # Tạo một thanh bấm xổ xuống để xem toàn bộ thẻ
