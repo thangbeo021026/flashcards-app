@@ -150,32 +150,32 @@ with tab_learn:
             st.button("🔀 Trộn thẻ", on_click=shuffle_cards, use_container_width=True)
 
         # Khung hiển thị thẻ
-    with st.container(border=True):
-            if not st.session_state.flipped:
-                st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt trước</p>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['front']}</div>", unsafe_allow_html=True)
-            else:
-                st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt sau</p>", unsafe_allow_html=True)
-                st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['back']}</div>", unsafe_allow_html=True)
-            
-            # Nút Lật thẻ
-            st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
+        with st.container(border=True):
+                if not st.session_state.flipped:
+                    st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt trước</p>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['front']}</div>", unsafe_allow_html=True)
+                else:
+                    st.markdown("<p style='font-size: 15px; color: gray; margin-bottom: 0px;'>Mặt sau</p>", unsafe_allow_html=True)
+                    st.markdown(f"<div style='font-size: 45px; font-weight: bold; text-align: center; padding: 30px;'>{current_card['back']}</div>", unsafe_allow_html=True)
+                
+                # Nút Lật thẻ
+                st.button("🔄 Lật thẻ", on_click=flip_card, use_container_width=True, type="primary")
 
-        # Nút điều hướng (Chỉ giữ lại 1 bộ có chức năng vô hiệu hóa khi ở đầu/cuối)
-    c_prev, c_next = st.columns(2)
-    with c_prev:
-        st.button("⬅️ Quay lại", on_click=prev_card, disabled=(st.session_state.current_index == 0), use_container_width=True)
-    with c_next:
-        st.button("Tiếp theo ➡️", on_click=next_card, disabled=(st.session_state.current_index == len(st.session_state.cards) - 1), use_container_width=True)
+            # Nút điều hướng (Chỉ giữ lại 1 bộ có chức năng vô hiệu hóa khi ở đầu/cuối)
+        c_prev, c_next = st.columns(2)
+        with c_prev:
+            st.button("⬅️ Quay lại", on_click=prev_card, disabled=(st.session_state.current_index == 0), use_container_width=True)
+        with c_next:
+            st.button("Tiếp theo ➡️", on_click=next_card, disabled=(st.session_state.current_index == len(st.session_state.cards) - 1), use_container_width=True)
 
-    st.divider()
-    if st.session_state.flipped:
-        st.write("**Bạn có nhớ đáp án này không?**")
-        cf, cr = st.columns(2)
-        with cf:
-            st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
-        with cr:
-            st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
+        st.divider()
+        if st.session_state.flipped:
+            st.write("**Bạn có nhớ đáp án này không?**")
+            cf, cr = st.columns(2)
+            with cf:
+                st.button("❌ Quên", on_click=lambda: update_score("forget"), use_container_width=True)
+            with cr:
+                st.button("✅ Nhớ", on_click=lambda: update_score("remember"), use_container_width=True)
 # --- TAB QUẢN LÝ ---
 with tab_manage:
     st.subheader("Thêm thẻ mới")
@@ -198,12 +198,21 @@ with tab_manage:
                         
                         if st.button("❌ Xóa thẻ", key=f"del_all_{card_id}"):
                             if "loi_id" in card_id:
-                                st.error("Thẻ này đang thiếu ID, chưa thể xóa. Cần kiểm tra lại hàm tải thẻ!")
+                                st.error("Lỗi: Không tìm thấy doc_id của thẻ này!")
                             else:
+                                # 1. Xóa trên Firebase đám mây
                                 db.collection('flashcards').document(card_id).delete()
+                                
+                                # 2. CẬP NHẬT NGAY LẬP TỨC TRÊN GIAO DIỆN WEB
+                                st.session_state.cards = [c for c in st.session_state.cards if c.get('doc_id') != card_id]
+                                
+                                # 3. Đặt lại vị trí đang học (tránh lỗi out of index)
+                                if st.session_state.current_index >= len(st.session_state.cards):
+                                    st.session_state.current_index = max(0, len(st.session_state.cards) - 1)
+                                    
                                 st.success("Đã xóa thẻ!")
                                 import time
-                                time.sleep(1)
+                                time.sleep(0.5)
                                 st.rerun()
     with st.form("add_form", clear_on_submit=True):
         new_front = st.text_area("Mặt trước (Câu hỏi / Toán học $$...$$)")
