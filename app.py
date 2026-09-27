@@ -111,17 +111,38 @@ if 'all_cards' not in st.session_state:
     st.session_state.all_cards = st.session_state.cards
 
 # 2. Quét toàn bộ thẻ để tìm các tên kho hiện có
-unique_decks = list(set([card.get('deck_name', 'Kho Tổng Hợp') for card in st.session_state.all_cards]))
+existing_decks = list(set([card.get('deck_name', 'Kho Tổng Hợp') for card in st.session_state.all_cards]))
+
+# Khởi tạo bộ nhớ tạm để giữ các kho vừa tạo (nhưng chưa có thẻ bên trong)
+if 'custom_decks' not in st.session_state:
+    st.session_state.custom_decks = []
+
+# Gộp kho có thẻ sẵn và kho rỗng mới tạo lại với nhau
+unique_decks = list(set(existing_decks + st.session_state.custom_decks))
+
+# Đảm bảo "Kho Tổng Hợp" luôn xuất hiện và nằm ở đầu danh sách
+if "Kho Tổng Hợp" not in unique_decks:
+    unique_decks.insert(0, "Kho Tổng Hợp")
+else:
+    unique_decks.remove("Kho Tổng Hợp")
+    unique_decks.insert(0, "Kho Tổng Hợp")
 
 # 3. Vẽ thanh menu bên trái (Sidebar)
 with st.sidebar:
     st.header("📂 Quản lý Kho Thẻ")
     
-    # Form tạo kho mới
-    new_deck_name = st.text_input("Tạo kho mới (Nhập tên và ấn Enter):")
-    if new_deck_name and new_deck_name not in unique_decks:
-        unique_decks.append(new_deck_name)
-        st.success(f"Đã tạo: {new_deck_name}")
+    # Dùng tính năng Form để ép Streamlit tự xóa ô chữ sau khi bấm nút
+    with st.form("new_deck_form", clear_on_submit=True):
+        new_deck_name = st.text_input("Tạo kho mới (Nhập tên):")
+        submitted = st.form_submit_button("Thêm kho")
+        
+        if submitted and new_deck_name.strip():
+            new_deck = new_deck_name.strip()
+            if new_deck not in unique_decks:
+                st.session_state.custom_decks.append(new_deck)
+                # Dùng st.toast để tạo thông báo nổi góc màn hình, tự biến mất sau 3 giây
+                st.toast(f"Đã tạo thành công kho: {new_deck}", icon="✅") 
+                st.rerun() # Tải lại để cập nhật danh sách chọn kho ngay lập tức
     
     # Nút chọn kho
     selected_deck = st.selectbox("Chọn kho đang học:", unique_decks)
