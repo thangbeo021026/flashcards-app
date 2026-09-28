@@ -263,6 +263,22 @@ with tab_learn:
                      f"✅ Nhớ: {current_card['remember']} | ❌ Quên: {current_card['forget']}")
         with col_shuffle:
             st.button("🔀 Trộn thẻ", on_click=shuffle_cards, use_container_width=True)
+    # --- CODE MỚI: NÚT GẮN SAO THẺ KHÓ ---
+    is_starred = current_card.get('starred', False)
+    star_label = "⭐ Đã ghi nhớ (Bỏ sao)" if is_starred else "☆ Đánh dấu câu khó"
+    
+    if st.button(star_label, use_container_width=True):
+        new_status = not is_starred
+        # Cập nhật lên Firebase đám mây
+        db.collection("flashcards").document(current_card['doc_id']).update({"starred": new_status})
+        
+        # Cập nhật song song vào 2 hộp RAM
+        st.session_state.cards[st.session_state.current_index]['starred'] = new_status
+        for c in st.session_state.all_cards:
+            if c.get('doc_id') == current_card['doc_id']:
+                c['starred'] = new_status
+                break
+        st.rerun()    
 
         # Khung hiển thị thẻ
         with st.container(border=True):
@@ -388,6 +404,24 @@ with tab_quiz:
 #Tap Quản Lý
 with tab_manage:
     st.subheader("Thêm thẻ mới")
+    if st.session_state.cards:
+            with st.expander("⚠️ Xóa toàn bộ thẻ trong kho hiện tại"):
+                st.warning(f"Hành động này sẽ xóa vĩnh viễn {len(st.session_state.cards)} thẻ của kho '{st.session_state.current_deck}'.")
+                if st.button("Xác nhận xóa tất cả", type="primary", use_container_width=True):
+                    # 1. Xóa toàn bộ trên Firebase đám mây
+                    for card in st.session_state.cards:
+                        db.collection("flashcards").document(card['doc_id']).delete()
+                    
+                    # 2. Xóa khỏi RAM (hộp tổng)
+                    ids_to_remove = [c['doc_id'] for c in st.session_state.cards]
+                    st.session_state.all_cards = [c for c in st.session_state.all_cards if c.get('doc_id') not in ids_to_remove]
+                    
+                    # 3. Làm sạch kho hiện tại và đặt lại tiến độ
+                    st.session_state.cards = []
+                    st.session_state.current_index = 0
+                    st.success("Đã dọn sạch kho thẻ!")
+                    st.rerun()
+    st.divider()                
     # Tạo một thanh bấm xổ xuống để xem toàn bộ thẻ
     with st.expander("📂 Xem toàn bộ thẻ đã lưu (Tùy chọn Xóa)"):
             if not st.session_state.cards:
