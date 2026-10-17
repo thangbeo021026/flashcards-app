@@ -4,6 +4,7 @@ from firebase_admin import credentials, firestore
 import os
 import random
 import streamlit.components.v1 as components
+from deep_translator import MyMemoryTranslator
 
 def add_keyboard_shortcuts():
     components.html(
@@ -403,6 +404,67 @@ with tab_quiz:
                             st.write(f"❌ **Câu {i+1}:** {q['question']} ➔ Bạn chọn: *{ans}* | **Đúng là: {q['answer']}**")
 #Tap Quản Lý
 with tab_manage:
+    # --- CODE MỚI: TỪ ĐIỂN & DỊCH TỰ ĐỘNG ---
+    with st.expander("🔍 Tra cứu Từ điển & Tạo thẻ nhanh", expanded=True):
+        st.markdown("Tra cứu nghĩa của từ và lưu trực tiếp vào kho thẻ hiện tại.")
+        c_lang, c_input = st.columns([1, 2])
+        with c_lang:
+            # Định nghĩa các cặp ngôn ngữ (Nguồn -> Đích)
+            # Định nghĩa các cặp ngôn ngữ chuẩn Google
+            # Định nghĩa các cặp ngôn ngữ (Nguồn -> Đích) chuẩn MyMemory
+            lang_dict = {
+                "Anh ➡️ Việt": ('en-US', 'vi-VN'),
+                "Trung ➡️ Việt": ('zh-CN', 'vi-VN'),    
+             }
+            selected_mode = st.selectbox("Chọn ngôn ngữ:", list(lang_dict.keys()))
+        with c_input:
+            search_word = st.text_input("Nhập từ vựng hoặc câu cần tra:")
+
+        if st.button("Dịch & Tra cứu", use_container_width=True):
+            if search_word.strip():
+                try:
+                    src, dest = lang_dict[selected_mode]
+                    # Gọi API dịch thuật
+                    translated_text = MyMemoryTranslator(source=src, target=dest).translate(search_word)
+                    
+                    st.info(f"**Nghĩa dịch:** {translated_text}")
+                    
+                    # Lưu tạm kết quả để chuẩn bị tạo thẻ
+                    st.session_state.temp_front = search_word
+                    st.session_state.temp_back = translated_text
+                except Exception as e:
+                    st.error(f"Lỗi dịch thuật: {e}")
+
+        # Nếu đã có kết quả tra cứu, hiện nút Thêm thẻ nhanh
+        if "temp_front" in st.session_state and "temp_back" in st.session_state:
+            if st.button(f"➕ Thêm ngay thẻ: 【 {st.session_state.temp_front} - {st.session_state.temp_back} 】", type="primary", use_container_width=True):
+                
+                # 1. Tạo dữ liệu thẻ mới
+                new_card_data = {
+                    "front": st.session_state.temp_front,
+                    "back": st.session_state.temp_back,
+                    "deck_name": st.session_state.get('current_deck', 'Kho Tổng Hợp'),
+                    "remember": 0,
+                    "forget": 0,
+                    "starred": False
+                }
+                
+                # 2. Đẩy lên Firebase đám mây
+                doc_ref = db.collection('flashcards').add(new_card_data)
+                new_card_data['doc_id'] = doc_ref[1].id
+                
+                # 3. Nạp thẳng vào RAM để không phải tải lại trang
+                st.session_state.all_cards.append(new_card_data)
+                st.session_state.cards.append(new_card_data)
+                
+                st.success("Đã lưu thẻ vào kho thành công!")
+                
+                # 4. Xóa bộ nhớ tạm để reset khung tra cứu
+                del st.session_state.temp_front
+                del st.session_state.temp_back
+                st.rerun()
+    st.divider()
+        # ----------------------------------------
     st.subheader("Thêm thẻ mới")
     if st.session_state.cards:
             with st.expander("⚠️ Xóa toàn bộ thẻ trong kho hiện tại"):

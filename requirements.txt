@@ -1,4 +1,3 @@
 streamlit
-streamlit-authenticator
 firebase-admin
-
+deep-translator
