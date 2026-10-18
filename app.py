@@ -443,6 +443,7 @@ with tab_manage:
                 new_card_data = {
                     "front": st.session_state.temp_front,
                     "back": st.session_state.temp_back,
+                    "owner": st.session_state.username,
                     "deck_name": st.session_state.get('current_deck', 'Kho Tổng Hợp'),
                     "remember": 0,
                     "forget": 0,
